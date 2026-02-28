@@ -1,0 +1,103 @@
+name: Auto-Upgrade Vulnerable Dependencies
+
+on:
+  schedule:
+    # Run daily at 2 AM
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install cyclonedx-bom safety bandit
+          
+      - name: Generate SBOM
+        run: |
+          cyclonedx-py -e -o sbom.json
+          
+      - name: Security scan
+        run: |
+          safety check -r requirements.txt --json > safety-report.json || true
+          bandit -r . -f json -o bandit-report.json || true
+          
+      - name: Check for upgrades
+        id: check-upgrades
+        run: |
+          python -c "
+          import json
+          import subprocess
+          
+          with open('requirements.txt') as f:
+            deps = [line.strip().split('==') for line in f if '==' in line]
+          
+          upgrades = []
+          for dep, version in deps:
+            # Get latest version
+            result = subprocess.run(
+              ['pip', 'index', 'versions', dep],
+              capture_output=True, text=True
+            )
+            if 'Available versions:' in result.stdout:
+              latest = result.stdout.split('Available versions:')[1].strip().split(',')[0]
+              if latest != version:
+                upgrades.append({'name': dep, 'from': version, 'to': latest})
+          
+          with open('upgrades.json', 'w') as f:
+            json.dump(upgrades, f)
+          "
+          
+      - name: Create upgrade PRs
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -c "
+          import json
+          import os
+          import subprocess
+          
+          with open('upgrades.json') as f:
+            upgrades = json.load(f)
+          
+          for upgrade in upgrades[:1]:  # Limit to 1 per run to avoid spam
+            branch = f'auto-upgrade/{upgrade[\"name\"]}-{upgrade[\"from\"]}-to-{upgrade[\"to\"]}'
+            
+            # Create branch
+            subprocess.run(['git', 'checkout', '-b', branch], check=True)
+            
+            # Update requirements.txt
+            with open('requirements.txt', 'r') as f:
+              content = f.read()
+            content = content.replace(
+              f'{upgrade[\"name\"]}=={upgrade[\"from\"]}',
+              f'{upgrade[\"name\"]}=={upgrade[\"to\"]}'
+            )
+            with open('requirements.txt', 'w') as f:
+              f.write(content)
+            
+            # Commit and push
+            subprocess.run(['git', 'config', 'user.name', 'github-actions'], check=True)
+            subprocess.run(['git', 'config', 'user.email', 'github-actions@github.com'], check=True)
+            subprocess.run(['git', 'add', 'requirements.txt'], check=True)
+            subprocess.run(['git', 'commit', '-m', f'chore(deps): upgrade {upgrade[\"name\"]} from {upgrade[\"from\"]} to {upgrade[\"to\"]}'], check=True)
+            subprocess.run(['git', 'push', 'origin', branch], check=True)
+            
+            # Create PR using GitHub CLI
+            subprocess.run([
+              'gh', 'pr', 'create',
+              '--title', f'🔒 Auto-upgrade: {upgrade[\"name\"]} {upgrade[\"from\"]} → {upgrade[\"to\"]}',
+              '--body', f'This PR automatically upgrades {upgrade[\"name\"]} from {upgrade[\"from\"]} to {upgrade[\"to\"]}.',
+              '--base', 'main',
+              '--head', branch
+            ], check=True)
+          "
