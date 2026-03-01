@@ -254,35 +254,28 @@ sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com
 ```
 
-## Free Hosting Platforms Deployment
+## Free Hosting - Render.com (Easiest!)
 
-### Option 1: Render (Free Tier - Recommended)
+### Quick Deploy (No environment variables needed):
 
-1. Push code to GitHub
-   
-2. Sign up at https://render.com and connect your GitHub repository
+1. **Push to GitHub**
+```
+git add .
+git commit -m "Ready for deployment"
+git push origin main
+```
 
-3. Create Web Service:
+2. **Deploy on Render**
+   - Go to https://render.com
+   - Sign up with GitHub
+   - Click "New" → "Web Service"
+   - Select your repository
    - Build Command: `pip install -r backend/requirements.txt`
-   - Start Command: `gunicorn -w 4 -b 0.0.0.0:5000 app:app`
-   - Select Free tier
+   - Start Command: `gunicorn -w 4 -b 0.0.0.0:5000 backend.app:app`
+   - Select **Free** tier
+   - Click "Deploy Web Service"
 
-### Option 2: Railway ($5 credit/month)
-
-1. Install Railway CLI: `npm install -g @railway/cli`
-2. Run `railway init` then `railway up`
-
-### Option 3: Cyclic (Free - Node/Python)
-
-1. Go to https://cyclic.sh
-2. Connect GitHub repository
-3. Automatic deployment
-
-### Option 4: PythonAnywhere (Free Tier)
-
-1. Sign up at https://www.pythonanywhere.com/
-2. Upload files via Files tab
-3. Configure WSGI in Web tab
+3. **Done!** Your app is live at `https://your-app-name.onrender.com`
 
 ## Summary
 
@@ -292,4 +285,5 @@ sudo certbot --nginx -d your-domain.com
 | Run Dev | `python app.py` |
 | Run Prod (Windows) | `python -m waitress --host 0.0.0.0:5000 app:app` |
 | Run Prod (Linux) | `gunicorn -w 4 -b 0.0.0.0:5000 app:app` |
+| Render | `gunicorn -w 4 -b 0.0.0.0:5000 backend.app:app` |
 | Docker | `docker build -t compops . && docker run -p 5000:5000 compops` |
