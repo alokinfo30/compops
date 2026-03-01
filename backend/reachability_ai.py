@@ -92,7 +92,7 @@ class ReachabilityAnalyzer:
         import_patterns = [
             f"import {component}",
             f"from {component} import",
-            f"require\('{component}'\)",
+            rf"require\('{component}'\)",
             f"<dependency>.*{component}.*</dependency>"
         ]
         

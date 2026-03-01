@@ -2,8 +2,6 @@ import networkx as nx
 import json
 import sqlite3
 from typing import Dict, List, Any
-from cyclonedx.model.bom import Bom
-from cyclonedx.parser import parse
 import pickle
 import os
 
@@ -13,13 +11,19 @@ class SmartSBOMGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
         self.graph_file = 'database/graph_store.pickle'
+        # Ensure database directory exists
+        os.makedirs('database', exist_ok=True)
         self._load_graph()
     
     def _load_graph(self):
         """Load existing graph from disk"""
         if os.path.exists(self.graph_file):
-            with open(self.graph_file, 'rb') as f:
-                self.graph = pickle.load(f)
+            try:
+                with open(self.graph_file, 'rb') as f:
+                    self.graph = pickle.load(f)
+            except (EOFError, pickle.UnpicklingError):
+                # File is corrupted or empty, start with empty graph
+                self.graph = nx.DiGraph()
     
     def _save_graph(self):
         """Save graph to disk"""

@@ -22,6 +22,8 @@ github_auto = GitHubAutomation()
 
 # Database initialization
 def init_db():
+    # Ensure database directory exists
+    os.makedirs('database', exist_ok=True)
     conn = sqlite3.connect('database/sbom.db')
     c = conn.cursor()
     
@@ -35,6 +37,7 @@ def init_db():
     # Vulnerabilities table
     c.execute('''CREATE TABLE IF NOT EXISTS vulnerabilities
                  (id TEXT PRIMARY KEY,
+                  project_id INTEGER,
                   component_name TEXT,
                   version TEXT,
                   severity TEXT,
@@ -42,7 +45,8 @@ def init_db():
                   description TEXT,
                   fixed_version TEXT,
                   detected_at TIMESTAMP,
-                  is_reachable BOOLEAN DEFAULT 0)''')
+                  is_reachable BOOLEAN DEFAULT 0,
+                  FOREIGN KEY(project_id) REFERENCES projects(id))''')
     
     # SBOM documents table
     c.execute('''CREATE TABLE IF NOT EXISTS sbom_documents
@@ -113,13 +117,14 @@ def get_vulnerabilities():
     c.execute(query, params)
     vulns = [{
         'id': row[0],
-        'component': row[1],
-        'version': row[2],
-        'severity': row[3],
-        'cvss': row[4],
-        'description': row[5],
-        'fixed_version': row[6],
-        'is_reachable': bool(row[8])
+        'project_id': row[1],
+        'component': row[2],
+        'version': row[3],
+        'severity': row[4],
+        'cvss': row[5],
+        'description': row[6],
+        'fixed_version': row[7],
+        'is_reachable': bool(row[9])
     } for row in c.fetchall()]
     
     conn.close()
