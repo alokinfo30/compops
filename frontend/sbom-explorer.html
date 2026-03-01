@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SBOM Explorer - CompOps Platform</title>
     
-    <!-- Metro UI CSS -->
-    <link rel="stylesheet" href="https://cdn.metroui.org.ua/v5/css/metro-all.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/custom.css">
@@ -16,67 +16,76 @@
     
     <!-- D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="app-bar" data-role="appbar">
-        <div class="app-bar-container">
-            <a href="#" class="app-bar-toggle" id="nav-toggle">
-                <span class="mif-menu"></span>
-            </a>
-            <a href="/" class="app-bar-brand">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
                 <i class="fas fa-shield-halved"></i> CompOps
             </a>
-            <ul class="app-bar-menu" id="nav-menu">
-                <li><a href="/"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a></li>
-                <li><a href="/sbom-explorer.html" class="active"><i class="fas fa-project-diagram"></i> <span class="nav-text">SBOM Explorer</span></a></li>
-                <li><a href="/dashboard.html"><i class="fas fa-chart-line"></i> <span class="nav-text">Analytics</span></a></li>
-            </ul>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/sbom-explorer.html">SBOM Explorer</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard.html">Analytics</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container-fluid">
+    <div class="container-fluid py-4">
         <!-- Header -->
-        <div class="row mt-4">
-            <div class="cell-12">
-                <h1 class="text-light">SBOM Explorer <small class="d-block">Visualize Component Dependencies</small></h1>
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-light">SBOM Explorer <small class="d-block text-muted">Visualize Component Dependencies</small></h1>
             </div>
         </div>
 
         <!-- Project Selector -->
-        <div class="row mt-4">
-            <div class="cell-md-6 cell-sm-12">
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-sm-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Select Project</h4>
+                        <h4 class="mb-0">Select Project</h4>
                     </div>
-                    <div class="card-content p-4">
-                        <div class="form-group">
-                            <label>Choose a project to visualize:</label>
-                            <select id="project-select" class="input">
-                                <option value="">Select a project...</option>
-                            </select>
-                        </div>
+                    <div class="card-body">
+                        <label class="form-label">Choose a project to visualize:</label>
+                        <select id="project-select" class="form-select">
+                            <option value="">Select a project...</option>
+                        </select>
                     </div>
                 </div>
             </div>
-            <div class="cell-md-6 cell-sm-12">
+            <div class="col-md-6 col-sm-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Legend</h4>
+                        <h4 class="mb-0">Legend</h4>
                     </div>
-                    <div class="card-content p-4">
-                        <div class="d-flex flex-wrap">
-                            <div class="legend-item m-1">
-                                <span class="legend-color" style="background: #9c27b0;"></span>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="d-flex align-items-center">
+                                <span class="legend-color me-2" style="background: #9c27b0;"></span>
                                 <span>Project</span>
                             </div>
-                            <div class="legend-item m-1">
-                                <span class="legend-color" style="background: #4caf50;"></span>
+                            <div class="d-flex align-items-center">
+                                <span class="legend-color me-2" style="background: #4caf50;"></span>
                                 <span>Component</span>
                             </div>
-                            <div class="legend-item m-1">
-                                <span class="legend-color" style="background: #f44336;"></span>
+                            <div class="d-flex align-items-center">
+                                <span class="legend-color me-2" style="background: #f44336;"></span>
                                 <span>Vulnerability</span>
                             </div>
                         </div>
@@ -86,40 +95,40 @@
         </div>
 
         <!-- Graph Visualization -->
-        <div class="row mt-4">
-            <div class="cell-12">
+        <div class="row mb-4">
+            <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex flex-justify-between flex-align-center">
-                        <h4 class="card-title">Dependency Graph</h4>
-                        <div class="graph-controls">
-                            <button class="button small" onclick="zoomIn()">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Dependency Graph</h4>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="zoomIn()" title="Zoom In">
                                 <i class="fas fa-search-plus"></i>
                             </button>
-                            <button class="button small" onclick="zoomOut()">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="zoomOut()" title="Zoom Out">
                                 <i class="fas fa-search-minus"></i>
                             </button>
-                            <button class="button small" onclick="resetZoom()">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="resetZoom()" title="Reset">
                                 <i class="fas fa-compress-arrows-alt"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="card-content p-4">
-                        <div id="graph-container"></div>
+                    <div class="card-body p-0">
+                        <div id="graph-container" style="min-height: 500px;"></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Component Details -->
-        <div class="row mt-4">
-            <div class="cell-12">
+        <div class="row mb-4">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="card-title">Component Details</h4>
+                        <h4 class="mb-0">Component Details</h4>
                     </div>
-                    <div class="card-content p-4">
-                        <div id="component-details" class="empty-state">
-                            <i class="fas fa-info-circle"></i>
+                    <div class="card-body">
+                        <div id="component-details" class="text-center text-muted p-4">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i>
                             <p>Click on a node to view component details</p>
                         </div>
                     </div>
@@ -128,47 +137,26 @@
         </div>
 
         <!-- Footer -->
-        <footer class="mt-4">
+        <footer class="mt-4 text-center text-muted">
             <p>&copy; 2024 CompOps Platform - Software Supply Chain Security</p>
         </footer>
     </div>
 
-    <!-- JavaScript -->
-    <script src="https://cdn.metroui.org.ua/v5/css/metro-icons.min.js"></script>
-    <script src="https://cdn.metroui.org.ua/v5/js/metro.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
         // Global variables
-        let svg, g, zoom;
-        let currentData = { nodes: [], links: [] };
+        var svg, g, zoom;
+        var currentData = { nodes: [], links: [] };
         
-        // Mobile navigation toggle
+        // Load projects on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const navToggle = document.getElementById('nav-toggle');
-            const navMenu = document.getElementById('nav-menu');
-            
-            if (navToggle && navMenu) {
-                navToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    navMenu.classList.toggle('active');
-                });
-                
-                document.addEventListener('click', function(e) {
-                    if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
-                        navMenu.classList.remove('active');
-                    }
-                });
-            }
-            
-            // Load projects
             loadProjects();
-            
-            // Initialize graph
             initGraph();
             
-            // Project select change handler
             document.getElementById('project-select').addEventListener('change', function() {
-                const projectId = this.value;
+                var projectId = this.value;
                 if (projectId) {
                     loadGraphData(projectId);
                 }
@@ -176,30 +164,30 @@
         });
         
         // Load projects for selector
-        async function loadProjects() {
-            try {
-                const response = await fetch('/api/projects');
-                const projects = await response.json();
-                
-                const select = document.getElementById('project-select');
+        function loadProjects() {
+            fetch('/api/projects')
+            .then(function(response) { return response.json(); })
+            .then(function(projects) {
+                var select = document.getElementById('project-select');
                 select.innerHTML = '<option value="">Select a project...</option>';
                 
-                projects.forEach(project => {
-                    const option = document.createElement('option');
+                projects.forEach(function(project) {
+                    var option = document.createElement('option');
                     option.value = project.id;
                     option.textContent = project.name;
                     select.appendChild(option);
                 });
-            } catch (error) {
+            })
+            .catch(function(error) {
                 console.error('Error loading projects:', error);
-            }
+            });
         }
         
         // Initialize D3 graph
         function initGraph() {
-            const container = document.getElementById('graph-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight || 500;
+            var container = document.getElementById('graph-container');
+            var width = container.clientWidth || 800;
+            var height = container.clientHeight || 500;
             
             svg = d3.select('#graph-container')
                 .append('svg')
@@ -207,10 +195,9 @@
                 .attr('height', height)
                 .attr('viewBox', [0, 0, width, height]);
             
-            // Add zoom behavior
             zoom = d3.zoom()
                 .scaleExtent([0.1, 4])
-                .on('zoom', (event) => {
+                .on('zoom', function(event) {
                     g.attr('transform', event.transform);
                 });
             
@@ -218,7 +205,7 @@
             
             g = svg.append('g');
             
-            // Add arrow marker for directed edges
+            // Add arrow marker
             svg.append('defs').append('marker')
                 .attr('id', 'arrowhead')
                 .attr('viewBox', '-0 -5 10 10')
@@ -233,14 +220,16 @@
         }
         
         // Load graph data
-        async function loadGraphData(projectId) {
-            try {
-                const response = await fetch(`/api/sbom/graph/${projectId}`);
-                currentData = await response.json();
+        function loadGraphData(projectId) {
+            fetch('/api/sbom/graph/' + projectId)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                currentData = data;
                 updateGraph(currentData);
-            } catch (error) {
+            })
+            .catch(function(error) {
                 console.error('Error loading graph data:', error);
-            }
+            });
         }
         
         // Update graph visualization
@@ -255,34 +244,30 @@
                 return;
             }
             
-            // Clear previous graph
             g.selectAll('*').remove();
             
-            const container = document.getElementById('graph-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight || 500;
+            var container = document.getElementById('graph-container');
+            var width = container.clientWidth || 800;
+            var height = container.clientHeight || 500;
             
-            // Create simulation
-            const simulation = d3.forceSimulation(data.nodes)
-                .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
+            var simulation = d3.forceSimulation(data.nodes)
+                .force('link', d3.forceLink(data.links).id(function(d) { return d.id; }).distance(100))
                 .force('charge', d3.forceManyBody().strength(-300))
                 .force('center', d3.forceCenter(width / 2, height / 2))
                 .force('collision', d3.forceCollide().radius(30));
             
-            // Draw links
-            const link = g.append('g')
+            var link = g.append('g')
                 .selectAll('line')
                 .data(data.links)
                 .join('line')
                 .attr('class', 'link')
                 .attr('marker-end', 'url(#arrowhead)');
             
-            // Draw nodes
-            const node = g.append('g')
+            var node = g.append('g')
                 .selectAll('g')
                 .data(data.nodes)
                 .join('g')
-                .attr('class', d => `node ${d.type}`)
+                .attr('class', function(d) { return 'node ' + (d.type || ''); })
                 .call(d3.drag()
                     .on('start', dragstarted)
                     .on('drag', dragged)
@@ -290,38 +275,33 @@
             
             node.append('circle')
                 .attr('r', 15)
-                .attr('fill', d => {
-                    switch(d.type) {
-                        case 'project': return '#9c27b0';
-                        case 'component': return '#4caf50';
-                        case 'vulnerability': return '#f44336';
-                        default: return '#1976d2';
-                    }
+                .attr('fill', function(d) {
+                    if (d.type === 'project') return '#9c27b0';
+                    if (d.type === 'component') return '#4caf50';
+                    if (d.type === 'vulnerability') return '#f44336';
+                    return '#1976d2';
                 });
             
             node.append('text')
                 .attr('dx', 20)
                 .attr('dy', 5)
-                .text(d => d.name || d.id)
+                .text(function(d) { return d.name || d.id; })
                 .style('font-size', '12px');
             
-            // Click handler for details
-            node.on('click', (event, d) => {
+            node.on('click', function(event, d) {
                 showComponentDetails(d);
             });
             
-            // Update positions on tick
-            simulation.on('tick', () => {
+            simulation.on('tick', function() {
                 link
-                    .attr('x1', d => d.source.x)
-                    .attr('y1', d => d.source.y)
-                    .attr('x2', d => d.target.x)
-                    .attr('y2', d => d.target.y);
+                    .attr('x1', function(d) { return d.source.x; })
+                    .attr('y1', function(d) { return d.source.y; })
+                    .attr('x2', function(d) { return d.target.x; })
+                    .attr('y2', function(d) { return d.target.y; });
                 
-                node.attr('transform', d => `translate(${d.x},${d.y})`);
+                node.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
             });
             
-            // Drag functions
             function dragstarted(event, d) {
                 if (!event.active) simulation.alphaTarget(0.3).restart();
                 d.fx = d.x;
@@ -342,24 +322,21 @@
         
         // Show component details
         function showComponentDetails(details) {
-            const container = document.getElementById('component-details');
-            const vulns = details.vulns || [];
+            var container = document.getElementById('component-details');
+            var vulns = details.vulns || [];
             
-            let html = `
-                <div class="row">
-                    <div class="cell-md-6">
-                        <p><strong>Name:</strong> ${details.name || details.id}</p>
-                        <p><strong>Type:</strong> ${details.type}</p>
-                    </div>
-                    <div class="cell-md-6">
-                        <p><strong>Vulnerabilities:</strong> ${vulns.length}</p>
-                        ${vulns.length > 0 ? `<p><strong>CVE IDs:</strong> ${vulns.join(', ')}</p>` : ''}
-                    </div>
-                </div>
-            `;
-            
-            container.innerHTML = html;
-            container.classList.remove('empty-state');
+            container.innerHTML = 
+                '<div class="row">' +
+                '<div class="col-md-6">' +
+                '<p><strong>Name:</strong> ' + (details.name || details.id) + '</p>' +
+                '<p><strong>Type:</strong> ' + (details.type || 'unknown') + '</p>' +
+                '</div>' +
+                '<div class="col-md-6">' +
+                '<p><strong>Vulnerabilities:</strong> ' + vulns.length + '</p>' +
+                (vulns.length > 0 ? '<p><strong>CVE IDs:</strong> ' + vulns.join(', ') + '</p>' : '') +
+                '</div>' +
+                '</div>';
+            container.classList.remove('text-center', 'text-muted', 'p-4');
         }
         
         // Zoom functions
@@ -374,22 +351,9 @@
         function resetZoom() {
             svg.transition().call(zoom.transform, d3.zoomIdentity);
         }
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (currentData.nodes && currentData.nodes.length > 0) {
-                updateGraph(currentData);
-            }
-        });
     </script>
     
     <style>
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
         .legend-color {
             width: 15px;
             height: 15px;
@@ -397,24 +361,15 @@
             display: inline-block;
         }
         
-        .graph-controls {
-            display: flex;
-            gap: 5px;
+        .node circle {
+            cursor: pointer;
+            stroke: #fff;
+            stroke-width: 2px;
         }
         
-        @media (max-width: 640px) {
-            .legend-item {
-                font-size: 0.85rem;
-            }
-            
-            .graph-controls {
-                margin-top: 10px;
-            }
-            
-            .card-header {
-                flex-direction: column;
-                align-items: flex-start !important;
-            }
+        .link {
+            stroke: #999;
+            stroke-width: 2px;
         }
     </style>
 </body>

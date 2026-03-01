@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CompOps Platform - Software Supply Chain Security</title>
     
-    <!-- Metro UI CSS -->
-    <link rel="stylesheet" href="https://cdn.metroui.org.ua/v5/css/metro-all.min.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/custom.css">
@@ -19,162 +19,161 @@
     
     <!-- D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="app-bar" data-role="appbar">
-        <div class="app-bar-container">
-            <a href="#" class="app-bar-toggle" id="nav-toggle">
-                <span class="mif-menu"></span>
-            </a>
-            <a href="/" class="app-bar-brand">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
                 <i class="fas fa-shield-halved"></i> CompOps
             </a>
-            <ul class="app-bar-menu" id="nav-menu">
-                <li><a href="/" class="active"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a></li>
-                <li><a href="/sbom-explorer.html"><i class="fas fa-project-diagram"></i> <span class="nav-text">SBOM Explorer</span></a></li>
-                <li><a href="/dashboard.html"><i class="fas fa-chart-line"></i> <span class="nav-text">Analytics</span></a></li>
-            </ul>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/sbom-explorer.html">SBOM Explorer</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard.html">Analytics</a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container-fluid">
+    <div class="container-fluid py-4">
         <!-- Main Content -->
-        <div class="grid mt-4">
-            <div class="row">
-                <div class="cell-12">
-                    <h1 class="text-light">Software Supply Chain Security <small class="d-block">CompOps Platform</small></h1>
-                </div>
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-light mb-4">Software Supply Chain Security</h1>
             </div>
+        </div>
 
-            <!-- Stats Cards -->
-            <div class="row mt-4">
-                <div class="cell-md-3 cell-sm-6 cell-12">
-                    <div class="card bg-darkBlue fg-white">
-                        <div class="card-content p-4">
-                            <div class="d-flex flex-justify-between flex-align-center">
-                                <div>
-                                    <span class="text-upper text-small">Projects</span>
-                                    <h2 id="stats-projects" class="mt-1 mb-0">0</h2>
-                                </div>
-                                <i class="fas fa-layer-group fa-2x"></i>
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-uppercase small">Projects</span>
+                                <h2 id="stats-projects" class="mt-1 mb-0">0</h2>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="cell-md-3 cell-sm-6 cell-12">
-                    <div class="card bg-green fg-white">
-                        <div class="card-content p-4">
-                            <div class="d-flex flex-justify-between flex-align-center">
-                                <div>
-                                    <span class="text-upper text-small">Components</span>
-                                    <h2 id="stats-components" class="mt-1 mb-0">0</h2>
-                                </div>
-                                <i class="fas fa-puzzle-piece fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="cell-md-3 cell-sm-6 cell-12">
-                    <div class="card bg-orange fg-white">
-                        <div class="card-content p-4">
-                            <div class="d-flex flex-justify-between flex-align-center">
-                                <div>
-                                    <span class="text-upper text-small">Vulnerabilities</span>
-                                    <h2 id="stats-vulns" class="mt-1 mb-0">0</h2>
-                                </div>
-                                <i class="fas fa-bug fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="cell-md-3 cell-sm-6 cell-12">
-                    <div class="card bg-red fg-white">
-                        <div class="card-content p-4">
-                            <div class="d-flex flex-justify-between flex-align-center">
-                                <div>
-                                    <span class="text-upper text-small">Reachable</span>
-                                    <h2 id="stats-reachable" class="mt-1 mb-0">0</h2>
-                                </div>
-                                <i class="fas fa-exclamation-triangle fa-2x"></i>
-                            </div>
+                            <i class="fas fa-layer-group fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Add Project Form -->
-            <div class="row mt-4">
-                <div class="cell-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">Add New Project</h4>
-                        </div>
-                        <div class="card-content p-4">
-                            <form id="add-project-form" class="row">
-                                <div class="cell-md-5 cell-sm-12">
-                                    <div class="form-group">
-                                        <label>Project Name</label>
-                                        <input type="text" id="project-name" class="input" 
-                                               placeholder="e.g., my-web-app" required>
-                                    </div>
-                                </div>
-                                <div class="cell-md-5 cell-sm-12">
-                                    <div class="form-group">
-                                        <label>GitHub Repository URL</label>
-                                        <input type="url" id="repo-url" class="input" 
-                                               placeholder="https://github.com/owner/repo" required>
-                                    </div>
-                                </div>
-                                <div class="cell-md-2 cell-sm-12">
-                                    <div class="form-group">
-                                        <label>&nbsp;</label>
-                                        <button type="submit" class="button success w-100">
-                                            <i class="fas fa-plus"></i> <span class="btn-text">Add</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-uppercase small">Components</span>
+                                <h2 id="stats-components" class="mt-1 mb-0">0</h2>
+                            </div>
+                            <i class="fas fa-puzzle-piece fa-2x opacity-50"></i>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Vulnerabilities Table -->
-            <div class="row mt-4">
-                <div class="cell-12">
-                    <div class="card">
-                        <div class="card-header d-flex flex-justify-between flex-align-center">
-                            <h4 class="card-title">Detected Vulnerabilities</h4>
-                            <div class="filter-option">
-                                <label class="switch">
-                                    <input type="checkbox" id="show-reachable-only">
-                                    <span class="check"></span>
-                                    <span class="caption">Show reachable only</span>
-                                </label>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-uppercase small">Vulnerabilities</span>
+                                <h2 id="stats-vulns" class="mt-1 mb-0">0</h2>
                             </div>
+                            <i class="fas fa-bug fa-2x opacity-50"></i>
                         </div>
-                        <div class="card-content p-4">
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover" id="vulns-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Component</th>
-                                            <th>Version</th>
-                                            <th>Vulnerability</th>
-                                            <th>Severity</th>
-                                            <th>CVSS</th>
-                                            <th>Reachable</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="vulns-tbody">
-                                        <tr>
-                                            <td colspan="7" class="text-center">Loading vulnerabilities...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-uppercase small">Reachable</span>
+                                <h2 id="stats-reachable" class="mt-1 mb-0">0</h2>
                             </div>
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Project Form -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Add New Project</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="add-project-form" class="row g-3">
+                            <div class="col-md-5 col-sm-12">
+                                <label class="form-label">Project Name</label>
+                                <input type="text" id="project-name" class="form-control" 
+                                       placeholder="e.g., my-web-app" required>
+                            </div>
+                            <div class="col-md-5 col-sm-12">
+                                <label class="form-label">GitHub Repository URL</label>
+                                <input type="url" id="repo-url" class="form-control" 
+                                       placeholder="https://github.com/owner/repo" required>
+                            </div>
+                            <div class="col-md-2 col-sm-12 d-flex align-items-end">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vulnerabilities Table -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                        <h4 class="mb-0">Detected Vulnerabilities</h4>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="show-reachable-only">
+                            <label class="form-check-label" for="show-reachable-only">Show reachable only</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="vulns-table">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Version</th>
+                                        <th>Vulnerability</th>
+                                        <th>Severity</th>
+                                        <th>CVSS</th>
+                                        <th>Reachable</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vulns-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Loading vulnerabilities...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -182,22 +181,25 @@
         </div>
 
         <!-- Footer -->
-        <footer class="mt-4">
+        <footer class="mt-4 text-center text-muted">
             <p>&copy; 2024 CompOps Platform - Software Supply Chain Security</p>
         </footer>
     </div>
 
     <!-- Upgrade Modal -->
-    <div class="modal" id="upgrade-modal">
-        <div class="modal-content">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h4 style="margin: 0;">Auto-Upgrade Vulnerability</h4>
-                <button class="button small" onclick="closeModal()" style="background: #e0e0e0; border: none; cursor: pointer;">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="upgrade-details"></div>
-                <div class="mt-2">
-                    <button id="execute-upgrade" class="button success w-100">
+    <div class="modal fade" id="upgrade-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Auto-Upgrade Vulnerability</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="upgrade-details"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="execute-upgrade" class="btn btn-success">
                         <i class="fas fa-rocket"></i> Create Upgrade PR
                     </button>
                 </div>
@@ -205,49 +207,8 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script src="https://cdn.metroui.org.ua/v5/js/metro.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/app.js"></script>
-    
-    <script>
-        // Mobile navigation toggle
-        document.addEventListener('DOMContentLoaded', function() {
-            const navToggle = document.getElementById('nav-toggle');
-            const navMenu = document.getElementById('nav-menu');
-            
-            if (navToggle && navMenu) {
-                navToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    navMenu.classList.toggle('active');
-                });
-                
-                // Close menu when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
-                        navMenu.classList.remove('active');
-                    }
-                });
-            }
-        });
-        
-        // Modal functions
-        function openModal() {
-            const modal = document.getElementById('upgrade-modal');
-            if (modal) modal.style.display = 'flex';
-        }
-        
-        function closeModal() {
-            const modal = document.getElementById('upgrade-modal');
-            if (modal) modal.style.display = 'none';
-        }
-        
-        // Close modal on outside click
-        window.onclick = function(event) {
-            const modal = document.getElementById('upgrade-modal');
-            if (event.target == modal) {
-                closeModal();
-            }
-        }
-    </script>
 </body>
 </html>
