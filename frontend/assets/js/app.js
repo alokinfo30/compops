@@ -3,6 +3,10 @@
 // Use relative API URL for both local and production
 const API_BASE = '/api';
 
+// Store upgrade info globally
+let currentUpgradeInfo = null;
+let currentVulnId = null;
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboardStats();
@@ -24,27 +28,38 @@ function setupEventListeners() {
             loadVulnerabilities(this.checked);
         });
     }
+    
+    // Execute upgrade button
+    const executeBtn = document.getElementById('execute-upgrade');
+    if (executeBtn) {
+        executeBtn.addEventListener('click', executeUpgrade);
+    }
 }
 
 async function handleAddProject(e) {
     e.preventDefault();
     
-    const name = document.getElementById('project-name').value;
-    const repoUrl = document.getElementById('repo-url').value;
+    const nameInput = document.getElementById('project-name');
+    const repoUrlInput = document.getElementById('repo-url');
+    
+    if (!nameInput || !repoUrlInput) return;
+    
+    const name = nameInput.value;
+    const repoUrl = repoUrlInput.value;
     
     try {
-        const response = await fetch(`${API_BASE}/projects`, {
+        const response = await fetch(API_BASE + '/projects', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ name, repo_url: repoUrl })
+            body: JSON.stringify({ name: name, repo_url: repoUrl })
         });
         
         if (response.ok) {
             // Reset form
-            document.getElementById('project-name').value = '';
-            document.getElementById('repo-url').value = '';
+            nameInput.value = '';
+            repoUrlInput.value = '';
             
             // Reload data
             loadDashboardStats();
@@ -63,52 +78,69 @@ async function handleAddProject(e) {
 
 async function loadDashboardStats() {
     try {
-        const response = await fetch(`${API_BASE}/projects`);
-        const projects = await response.json();
+        // Get projects count
+        const projectsResponse = await fetch(API_BASE + '/projects');
+        const projects = projectsResponse.ok ? await projectsResponse.json() : [];
         
         const projectsEl = document.getElementById('stats-projects');
         if (projectsEl) projectsEl.textContent = projects.length;
         
         // Get vulnerabilities count
-        const vulnsResponse = await fetch(`${API_BASE}/vulnerabilities`);
-        const vulns = await vulnsResponse.json();
+        const vulnsResponse = await fetch(API_BASE + '/vulnerabilities');
+        const vulns = vulnsResponse.ok ? await vulnsResponse.json() : [];
         
         const vulnsEl = document.getElementById('stats-vulns');
         if (vulnsEl) vulnsEl.textContent = vulns.length;
         
         // Count reachable
-        const reachable = vulns.filter(v => v.is_reachable).length;
+        const reachable = vulns.filter(function(v) { return v.is_reachable; }).length;
         const reachableEl = document.getElementById('stats-reachable');
         if (reachableEl) reachableEl.textContent = reachable;
         
         // Count components (unique from vulns)
-        const components = new Set(vulns.map(v => v.component)).size;
+        const componentSet = new Set();
+        vulns.forEach(function(v) { 
+            if (v.component) componentSet.add(v.component); 
+        });
         const componentsEl = document.getElementById('stats-components');
-        if (componentsEl) componentsEl.textContent = components;
+        if (componentsEl) componentsEl.textContent = componentSet.size;
         
     } catch (error) {
         console.error('Error loading stats:', error);
     }
 }
 
-async function loadVulnerabilities(reachableOnly = false) {
+async function loadVulnerabilities(reachableOnly) {
+    reachableOnly = reachableOnly || false;
+    
     try {
-        let url = `${API_BASE}/vulnerabilities`;
+        var url = API_BASE + '/vulnerabilities';
         if (reachableOnly) {
             url += '?reachable_only=true';
         }
         
         const response = await fetch(url);
-        const vulns = await response.json();
+        const vulns = response.ok ? await response.json() : [];
         
         renderVulnerabilitiesTable(vulns);
     } catch (error) {
         console.error('Error loading vulnerabilities:', error);
+        var tbody = document.getElementById('vulns-tbody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading vulnerabilities</td></tr>';
+        }
     }
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
 function renderVulnerabilitiesTable(vulns) {
-    const tbody = document.getElementById('vulns-tbody');
+    var tbody = document.getElementById('vulns-tbody');
     if (!tbody) return;
     
     if (!vulns || vulns.length === 0) {
@@ -116,246 +148,231 @@ function renderVulnerabilitiesTable(vulns) {
         return;
     }
     
-    tbody.innerHTML = vulns.map(vuln => `
-        <tr data-vuln-id="${vuln.id}">
-            <td>${vuln.component || 'N/A'}</td>
-            <td>${vuln.version || 'N/A'}</td>
-            <td>${vuln.id}</td>
-            <td>
-                <span class="badge ${getSeverityClass(vuln.severity)}">
-                    ${vuln.severity || 'UNKNOWN'}
-                </span>
-            </td>
-            <td>${vuln.cvss || 'N/A'}</td>
-            <td>
-                <span class="badge ${vuln.is_reachable ? 'danger' : 'success'}">
-                    ${vuln.is_reachable ? 'YES' : 'NO'}
-                </span>
-            </td>
-            <td>
-                <button onclick="analyzeReachability('${vuln.id}')" 
-                        class="action-btn ${vuln.is_reachable ? 'warning' : 'primary'}"
-                        ${vuln.is_reachable ? 'disabled title="Already analyzed as reachable"' : ''}>
-                    <i class="fas fa-brain"></i>
-                </button>
-                <button onclick="checkUpgrade('${vuln.id}')" 
-                        class="action-btn success"
-                        title="Check for upgrade">
-                    <i class="fas fa-arrow-up"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    var html = '';
+    for (var i = 0; i < vulns.length; i++) {
+        var vuln = vulns[i];
+        var vulnId = vuln.id ? encodeURIComponent(vuln.id) : '';
+        var component = escapeHtml(vuln.component);
+        var version = escapeHtml(vuln.version);
+        var severity = vuln.severity || 'UNKNOWN';
+        var cvss = vuln.cvss || 'N/A';
+        var isReachable = vuln.is_reachable ? 'YES' : 'NO';
+        var severityClass = getSeverityClass(severity);
+        var reachableClass = vuln.is_reachable ? 'danger' : 'success';
+        
+        html += '<tr data-vuln-id="' + vulnId + '" data-component="' + component + '" data-version="' + version + '">';
+        html += '<td>' + component + '</td>';
+        html += '<td>' + version + '</td>';
+        html += '<td>' + escapeHtml(vuln.id) + '</td>';
+        html += '<td><span class="badge ' + severityClass + '">' + severity + '</span></td>';
+        html += '<td>' + cvss + '</td>';
+        html += '<td><span class="badge ' + reachableClass + '">' + isReachable + '</span></td>';
+        html += '<td>';
+        
+        if (!vuln.is_reachable) {
+            html += '<button onclick="analyzeReachability(\'' + vulnId + '\')" class="action-btn primary" title="Analyze"><i class="fas fa-brain"></i></button>';
+        } else {
+            html += '<button class="action-btn warning" disabled title="Already analyzed"><i class="fas fa-brain"></i></button>';
+        }
+        
+        html += '<button onclick="checkUpgrade(\'' + vulnId + '\')" class="action-btn success" title="Check for upgrade"><i class="fas fa-arrow-up"></i></button>';
+        html += '</td></tr>';
+    }
+    
+    tbody.innerHTML = html;
 }
 
 function getSeverityClass(severity) {
-    const severityMap = {
-        'CRITICAL': 'danger',
-        'HIGH': 'danger',
-        'MEDIUM': 'warning',
-        'LOW': 'success'
-    };
-    return severityMap[severity?.toUpperCase()] || 'info';
+    if (!severity) return 'info';
+    var upper = severity.toUpperCase();
+    if (upper === 'CRITICAL' || upper === 'HIGH') return 'danger';
+    if (upper === 'MEDIUM') return 'warning';
+    if (upper === 'LOW') return 'success';
+    return 'info';
 }
 
-async function analyzeReachability(vulnId) {
-    const button = event.target.closest('button');
-    const originalHTML = button.innerHTML;
+function analyzeReachability(vulnId) {
+    var button = event.target.closest('button');
+    if (!button) return;
     
+    var originalHTML = button.innerHTML;
     button.innerHTML = '<span class="loading"></span>';
     button.disabled = true;
     
-    try {
-        // Get component info from table row
-        const row = document.querySelector(`tr[data-vuln-id="${vulnId}"]`);
-        if (!row) return;
-        
-        const component = row.cells[0].textContent;
-        const version = row.cells[1].textContent;
-        
-        const response = await fetch(`${API_BASE}/reachability/analyze`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                vuln_id: vulnId,
-                component: component,
-                version: version
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.is_reachable !== null) {
+    // Get component info from table row
+    var row = document.querySelector('tr[data-vuln-id="' + vulnId + '"]');
+    if (!row) {
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+        return;
+    }
+    
+    var component = row.getAttribute('data-component');
+    var version = row.getAttribute('data-version');
+    
+    fetch(API_BASE + '/reachability/analyze', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            vuln_id: decodeURIComponent(vulnId),
+            component: component,
+            version: version
+        })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
+        if (result.is_reachable !== null && result.is_reachable !== undefined) {
+            var confidence = result.confidence ? Math.round(result.confidence * 100) : 0;
             showNotification(
-                `Reachable: ${result.is_reachable ? 'YES' : 'NO'} (${Math.round(result.confidence * 100)}% confidence)`,
+                'Reachable: ' + (result.is_reachable ? 'YES' : 'NO') + ' (' + confidence + '% confidence)',
                 result.is_reachable ? 'warning' : 'success'
             );
             
             // Reload table
             loadVulnerabilities();
         }
-        
-    } catch (error) {
+    })
+    .catch(function(error) {
         console.error('Error analyzing:', error);
         showNotification('Analysis failed: ' + error.message, 'error');
-    } finally {
+    })
+    .finally(function() {
         button.innerHTML = originalHTML;
         button.disabled = false;
-    }
+    });
 }
 
-async function checkUpgrade(vulnId) {
-    try {
-        const response = await fetch(`${API_BASE}/upgrade/check/${vulnId}`, {
-            method: 'POST'
-        });
-        
-        const result = await response.json();
-        
+function checkUpgrade(vulnId) {
+    fetch(API_BASE + '/upgrade/check/' + encodeURIComponent(vulnId), {
+        method: 'POST'
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
         if (result.feasible) {
-            // Show upgrade modal
-            showUpgradeModal(vulnId, result);
+            showUpgradeModal(decodeURIComponent(vulnId), result);
         } else {
             showNotification(
-                `Cannot auto-upgrade: ${result.reason}`,
+                'Cannot auto-upgrade: ' + (result.reason || 'Unknown reason'),
                 'warning'
             );
         }
-        
-    } catch (error) {
+    })
+    .catch(function(error) {
         console.error('Error checking upgrade:', error);
         showNotification('Upgrade check failed: ' + error.message, 'error');
-    }
+    });
 }
 
 function showUpgradeModal(vulnId, upgradeInfo) {
-    const modal = document.getElementById('upgrade-modal');
-    const details = document.getElementById('upgrade-details');
+    var modal = document.getElementById('upgrade-modal');
+    var details = document.getElementById('upgrade-details');
     
     if (!modal || !details) return;
     
-    details.innerHTML = `
-        <div class="info-panel">
-            <p><strong>Component:</strong> ${upgradeInfo.component}</p>
-            <p><strong>Current Version:</strong> ${upgradeInfo.from_version}</p>
-            <p><strong>Target Version:</strong> ${upgradeInfo.to_version}</p>
-            <p><strong>Confidence:</strong> ${Math.round(upgradeInfo.confidence * 100)}%</p>
-            <p class="text-small mt-2" style="color: #666;">
-                This will create a pull request with the upgraded dependency.
-            </p>
-        </div>
-    `;
+    // Store globally
+    currentVulnId = vulnId;
+    currentUpgradeInfo = upgradeInfo;
     
-    // Store vuln ID for the execute button
-    const executeBtn = document.getElementById('execute-upgrade');
-    if (executeBtn) {
-        executeBtn.dataset.vulnId = vulnId;
-        executeBtn.dataset.upgradeInfo = JSON.stringify(upgradeInfo);
-    }
+    details.innerHTML = '<div class="info-panel">' +
+        '<p><strong>Component:</strong> ' + escapeHtml(upgradeInfo.component) + '</p>' +
+        '<p><strong>Current Version:</strong> ' + escapeHtml(upgradeInfo.from_version) + '</p>' +
+        '<p><strong>Target Version:</strong> ' + escapeHtml(upgradeInfo.to_version) + '</p>' +
+        '<p><strong>Confidence:</strong> ' + Math.round((upgradeInfo.confidence || 0) * 100) + '%</p>' +
+        '<p class="text-small mt-2" style="color: #666;">This will create a pull request with the upgraded dependency.</p>' +
+        '</div>';
     
     // Open modal
     modal.style.display = 'flex';
 }
 
-// Execute upgrade
-const executeUpgradeBtn = document.getElementById('execute-upgrade');
-if (executeUpgradeBtn) {
-    executeUpgradeBtn.addEventListener('click', async function() {
-        const vulnId = this.dataset.vulnId;
-        const upgradeInfo = JSON.parse(this.dataset.upgradeInfo);
-        
-        this.innerHTML = '<span class="loading"></span>';
-        this.disabled = true;
-        
-        try {
-            const response = await fetch(`${API_BASE}/upgrade/execute`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    vuln_id: vulnId,
-                    component: upgradeInfo.component,
-                    from_version: upgradeInfo.from_version,
-                    to_version: upgradeInfo.to_version
-                })
-            });
+function executeUpgrade() {
+    var executeBtn = document.getElementById('execute-upgrade');
+    if (!currentVulnId || !currentUpgradeInfo) {
+        showNotification('No upgrade information available', 'error');
+        return;
+    }
+    
+    var originalHTML = executeBtn.innerHTML;
+    executeBtn.innerHTML = '<span class="loading"></span>';
+    executeBtn.disabled = true;
+    
+    fetch(API_BASE + '/upgrade/execute', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            vuln_id: currentVulnId,
+            component: currentUpgradeInfo.component,
+            from_version: currentUpgradeInfo.from_version,
+            to_version: currentUpgradeInfo.to_version
+        })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
+        if (result.success) {
+            showNotification('PR created successfully! PR #' + result.pr_number, 'success');
             
-            const result = await response.json();
+            var modal = document.getElementById('upgrade-modal');
+            if (modal) modal.style.display = 'none';
             
-            if (result.success) {
-                showNotification(
-                    `PR created successfully! PR #${result.pr_number}`,
-                    'success'
-                );
-                
-                // Close modal
-                const modal = document.getElementById('upgrade-modal');
-                if (modal) modal.style.display = 'none';
-            } else {
-                showNotification(`Failed: ${result.error}`, 'error');
-            }
-            
-        } catch (error) {
-            console.error('Error executing upgrade:', error);
-            showNotification('Upgrade failed: ' + error.message, 'error');
-        } finally {
-            this.innerHTML = '<i class="fas fa-rocket"></i> Create Upgrade PR';
-            this.disabled = false;
+            currentVulnId = null;
+            currentUpgradeInfo = null;
+        } else {
+            showNotification('Failed: ' + (result.error || 'Unknown error'), 'error');
         }
+    })
+    .catch(function(error) {
+        console.error('Error executing upgrade:', error);
+        showNotification('Upgrade failed: ' + error.message, 'error');
+    })
+    .finally(function() {
+        executeBtn.innerHTML = originalHTML;
+        executeBtn.disabled = false;
     });
 }
 
 // Simple notification function
 function showNotification(message, type) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 4px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        animation: slideIn 0.3s ease;
-        background: ${type === 'success' ? '#4caf50' : type === 'warning' ? '#ff9800' : '#f44336'};
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
+    var notification = document.createElement('div');
+    var bgColor = '#4caf50';
+    if (type === 'warning') bgColor = '#ff9800';
+    if (type === 'error') bgColor = '#f44336';
+    
+    notification.style.cssText = 
+        'position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 4px; ' +
+        'color: white; font-weight: 500; z-index: 10000; animation: slideIn 0.3s ease; ' +
+        'background: ' + bgColor + '; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
     notification.textContent = message;
     
     document.body.appendChild(notification);
     
-    // Remove after 3 seconds
-    setTimeout(() => {
+    setTimeout(function() {
         notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
+        setTimeout(function() { 
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
     }, 3000);
 }
 
 // Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(100%); opacity: 0; }
-    }
-`;
+var style = document.createElement('style');
+style.textContent = 
+    '@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }' +
+    '@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }';
 document.head.appendChild(style);
 
 // Real-time updates - poll every 30 seconds
-setInterval(() => {
+setInterval(function() {
     if (document.visibilityState === 'visible') {
         loadDashboardStats();
-        const reachableOnly = document.getElementById('show-reachable-only')?.checked || false;
+        var reachableOnly = false;
+        var toggle = document.getElementById('show-reachable-only');
+        if (toggle) reachableOnly = toggle.checked;
         loadVulnerabilities(reachableOnly);
     }
 }, 30000);
