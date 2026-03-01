@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Analytics - CompOps Platform</title>
+    
+    <!-- Metro UI CSS -->
+    <link rel="stylesheet" href="https://cdn.metroui.org.ua/v5/css/metro-all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/custom.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="app-bar" data-role="appbar">
+        <div class="app-bar-container">
+            <a href="#" class="app-bar-toggle" id="nav-toggle">
+                <span class="mif-menu"></span>
+            </a>
+            <a href="/" class="app-bar-brand">
+                <i class="fas fa-shield-halved"></i> CompOps
+            </a>
+            <ul class="app-bar-menu" id="nav-menu">
+                <li><a href="/"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a></li>
+                <li><a href="/sbom-explorer.html"><i class="fas fa-project-diagram"></i> <span class="nav-text">SBOM Explorer</span></a></li>
+                <li><a href="/dashboard.html" class="active"><i class="fas fa-chart-line"></i> <span class="nav-text">Analytics</span></a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mt-4">
+            <div class="cell-12">
+                <h1 class="text-light">Analytics <small class="d-block">Security Insights & Trends</small></h1>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="row mt-4">
+            <!-- Severity Distribution -->
+            <div class="cell-md-6 cell-sm-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Vulnerability Severity Distribution</h4>
+                    </div>
+                    <div class="card-content p-4">
+                        <div class="chart-container">
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reachability Status -->
+            <div class="cell-md-6 cell-sm-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Reachability Analysis</h4>
+                    </div>
+                    <div class="card-content p-4">
+                        <div class="chart-container">
+                            <canvas id="reachabilityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="row mt-4">
+            <!-- Top Vulnerable Components -->
+            <div class="cell-md-6 cell-sm-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Top Vulnerable Components</h4>
+                    </div>
+                    <div class="card-content p-4">
+                        <div class="table-responsive">
+                            <table class="table" id="vulnerable-components-table">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="2" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CVSS Score Distribution -->
+            <div class="cell-md-6 cell-sm-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">CVSS Score Distribution</h4>
+                    </div>
+                    <div class="card-content p-4">
+                        <div class="chart-container">
+                            <canvas id="cvssChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="row mt-4">
+            <div class="cell-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title">Security Summary</h4>
+                    </div>
+                    <div class="card-content p-4">
+                        <div class="row">
+                            <div class="cell-md-3 cell-sm-6 cell-12">
+                                <div class="summary-stat text-center">
+                                    <i class="fas fa-shield-alt fa-2x text-primary"></i>
+                                    <h3 id="total-projects">0</h3>
+                                    <p>Total Projects</p>
+                                </div>
+                            </div>
+                            <div class="cell-md-3 cell-sm-6 cell-12">
+                                <div class="summary-stat text-center">
+                                    <i class="fas fa-bug fa-2x text-orange"></i>
+                                    <h3 id="total-vulns">0</h3>
+                                    <p>Total Vulnerabilities</p>
+                                </div>
+                            </div>
+                            <div class="cell-md-3 cell-sm-6 cell-12">
+                                <div class="summary-stat text-center">
+                                    <i class="fas fa-exclamation-circle fa-2x text-red"></i>
+                                    <h3 id="critical-vulns">0</h3>
+                                    <p>Critical (CVSS 9+)</p>
+                                </div>
+                            </div>
+                            <div class="cell-md-3 cell-sm-6 cell-12">
+                                <div class="summary-stat text-center">
+                                    <i class="fas fa-check-circle fa-2x text-green"></i>
+                                    <h3 id="fixed-vulns">0</h3>
+                                    <p>Fixed</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-4">
+            <p>&copy; 2024 CompOps Platform - Software Supply Chain Security</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.metroui.org.ua/v5/js/metro.min.js"></script>
+    
+    <script>
+        // Global chart instances
+        let severityChart, reachabilityChart, cvssChart;
+        
+        // Mobile navigation toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const navToggle = document.getElementById('nav-toggle');
+            const navMenu = document.getElementById('nav-menu');
+            
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    navMenu.classList.toggle('active');
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                        navMenu.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Load analytics data
+            loadAnalytics();
+        });
+        
+        // Load analytics data
+        async function loadAnalytics() {
+            try {
+                // Fetch vulnerabilities
+                const vulnResponse = await fetch('/api/vulnerabilities');
+                const vulns = await vulnResponse.json();
+                
+                // Fetch projects
+                const projResponse = await fetch('/api/projects');
+                const projects = await projResponse.json();
+                
+                // Update charts and stats
+                updateSeverityChart(vulns);
+                updateReachabilityChart(vulns);
+                updateCVSSChart(vulns);
+                updateVulnerableComponentsTable(vulns);
+                updateSummaryStats(projects, vulns);
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+        
+        // Update severity distribution chart
+        function updateSeverityChart(vulns) {
+            const counts = {
+                Critical: 0,
+                High: 0,
+                Medium: 0,
+                Low: 0
+            };
+            
+            vulns.forEach(v => {
+                const severity = (v.severity || 'Unknown').toLowerCase();
+                if (severity.includes('critical')) counts.Critical++;
+                else if (severity.includes('high')) counts.High++;
+                else if (severity.includes('medium')) counts.Medium++;
+                else counts.Low++;
+            });
+            
+            const ctx = document.getElementById('severityChart').getContext('2d');
+            
+            if (severityChart) severityChart.destroy();
+            
+            severityChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: ['#f44336', '#ff9800', '#ffc107', '#4caf50']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update reachability chart
+        function updateReachabilityChart(vulns) {
+            const reachable = vulns.filter(v => v.is_reachable).length;
+            const notReachable = vulns.length - reachable;
+            
+            const ctx = document.getElementById('reachabilityChart').getContext('2d');
+            
+            if (reachabilityChart) reachabilityChart.destroy();
+            
+            reachabilityChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Reachable', 'Not Reachable'],
+                    datasets: [{
+                        data: [reachable, notReachable],
+                        backgroundColor: ['#f44336', '#4caf50']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update CVSS score chart
+        function updateCVSSChart(vulns) {
+            const ranges = {
+                '0-3': 0,
+                '4-6': 0,
+                '7-8': 0,
+                '9-10': 0
+            };
+            
+            vulns.forEach(v => {
+                const score = v.cvss || 0;
+                if (score <= 3) ranges['0-3']++;
+                else if (score <= 6) ranges['4-6']++;
+                else if (score <= 8) ranges['7-8']++;
+                else ranges['9-10']++;
+            });
+            
+            const ctx = document.getElementById('cvssChart').getContext('2d');
+            
+            if (cvssChart) cvssChart.destroy();
+            
+            cvssChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(ranges),
+                    datasets: [{
+                        label: 'Vulnerabilities',
+                        data: Object.values(ranges),
+                        backgroundColor: ['#4caf50', '#ffc107', '#ff9800', '#f44336']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update vulnerable components table
+        function updateVulnerableComponentsTable(vulns) {
+            const counts = {};
+            vulns.forEach(v => {
+                const comp = v.component || 'Unknown';
+                counts[comp] = (counts[comp] || 0) + 1;
+            });
+            
+            const sorted = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+            
+            const tbody = document.querySelector('#vulnerable-components-table tbody');
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center">No data available</td></tr>';
+            } else {
+                tbody.innerHTML = sorted.map(([comp, count]) => `
+                    <tr>
+                        <td>${comp}</td>
+                        <td><span class="badge danger">${count}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+        // Update summary stats
+        function updateSummaryStats(projects, vulns) {
+            document.getElementById('total-projects').textContent = projects.length;
+            document.getElementById('total-vulns').textContent = vulns.length;
+            
+            const critical = vulns.filter(v => (v.cvss || 0) >= 9).length;
+            document.getElementById('critical-vulns').textContent = critical;
+            
+            const fixed = vulns.filter(v => v.fixed_version).length;
+            document.getElementById('fixed-vulns').textContent = fixed;
+        }
+    </script>
+    
+    <style>
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        
+        .summary-stat {
+            padding: 20px;
+        }
+        
+        .summary-stat i {
+            margin-bottom: 10px;
+        }
+        
+        .summary-stat h3 {
+            font-size: 2rem;
+            margin: 10px 0;
+        }
+        
+        .summary-stat p {
+            color: #666;
+            margin: 0;
+        }
+        
+        .text-primary { color: #1976d2; }
+        .text-orange { color: #ff9800; }
+        .text-red { color: #f44336; }
+        .text-green { color: #4caf50; }
+        
+        @media (max-width: 640px) {
+            .summary-stat {
+                padding: 15px;
+            }
+            
+            .summary-stat h3 {
+                font-size: 1.5rem;
+            }
+            
+            .chart-container {
+                height: 200px;
+            }
+        }
+    </style>
+</body>
+</html>

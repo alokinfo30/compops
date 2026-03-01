@@ -1,6 +1,7 @@
 // Main application JavaScript
 
-const API_BASE = 'http://localhost:5000/api';
+// Use relative API URL for both local and production
+const API_BASE = '/api';
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -50,17 +51,13 @@ async function handleAddProject(e) {
             loadVulnerabilities();
             
             // Show success message
-            Metro.notify.create('Project added successfully', 'Success', {
-                cls: 'success',
-                timeout: 3000
-            });
+            showNotification('Project added successfully', 'success');
+        } else {
+            showNotification('Failed to add project', 'error');
         }
     } catch (error) {
         console.error('Error adding project:', error);
-        Metro.notify.create('Failed to add project', 'Error', {
-            cls: 'alert',
-            timeout: 3000
-        });
+        showNotification('Failed to add project: ' + error.message, 'error');
     }
 }
 
@@ -69,21 +66,25 @@ async function loadDashboardStats() {
         const response = await fetch(`${API_BASE}/projects`);
         const projects = await response.json();
         
-        document.getElementById('stats-projects').textContent = projects.length;
+        const projectsEl = document.getElementById('stats-projects');
+        if (projectsEl) projectsEl.textContent = projects.length;
         
         // Get vulnerabilities count
         const vulnsResponse = await fetch(`${API_BASE}/vulnerabilities`);
         const vulns = await vulnsResponse.json();
         
-        document.getElementById('stats-vulns').textContent = vulns.length;
+        const vulnsEl = document.getElementById('stats-vulns');
+        if (vulnsEl) vulnsEl.textContent = vulns.length;
         
         // Count reachable
         const reachable = vulns.filter(v => v.is_reachable).length;
-        document.getElementById('stats-reachable').textContent = reachable;
+        const reachableEl = document.getElementById('stats-reachable');
+        if (reachableEl) reachableEl.textContent = reachable;
         
         // Count components (unique from vulns)
         const components = new Set(vulns.map(v => v.component)).size;
-        document.getElementById('stats-components').textContent = components;
+        const componentsEl = document.getElementById('stats-components');
+        if (componentsEl) componentsEl.textContent = components;
         
     } catch (error) {
         console.error('Error loading stats:', error);
@@ -110,15 +111,15 @@ function renderVulnerabilitiesTable(vulns) {
     const tbody = document.getElementById('vulns-tbody');
     if (!tbody) return;
     
-    if (vulns.length === 0) {
+    if (!vulns || vulns.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No vulnerabilities found</td></tr>';
         return;
     }
     
     tbody.innerHTML = vulns.map(vuln => `
         <tr data-vuln-id="${vuln.id}">
-            <td>${vuln.component}</td>
-            <td>${vuln.version}</td>
+            <td>${vuln.component || 'N/A'}</td>
+            <td>${vuln.version || 'N/A'}</td>
             <td>${vuln.id}</td>
             <td>
                 <span class="badge ${getSeverityClass(vuln.severity)}">
@@ -133,13 +134,14 @@ function renderVulnerabilitiesTable(vulns) {
             </td>
             <td>
                 <button onclick="analyzeReachability('${vuln.id}')" 
-                        class="button small ${vuln.is_reachable ? 'warning' : 'secondary'}"
-                        ${vuln.is_reachable ? 'disabled' : ''}>
-                    <i class="fas fa-brain"></i> Analyze
+                        class="action-btn ${vuln.is_reachable ? 'warning' : 'primary'}"
+                        ${vuln.is_reachable ? 'disabled title="Already analyzed as reachable"' : ''}>
+                    <i class="fas fa-brain"></i>
                 </button>
                 <button onclick="checkUpgrade('${vuln.id}')" 
-                        class="button small success">
-                    <i class="fas fa-arrow-up"></i> Upgrade
+                        class="action-btn success"
+                        title="Check for upgrade">
+                    <i class="fas fa-arrow-up"></i>
                 </button>
             </td>
         </tr>
@@ -153,19 +155,21 @@ function getSeverityClass(severity) {
         'MEDIUM': 'warning',
         'LOW': 'success'
     };
-    return severityMap[severity?.toUpperCase()] || 'secondary';
+    return severityMap[severity?.toUpperCase()] || 'info';
 }
 
 async function analyzeReachability(vulnId) {
     const button = event.target.closest('button');
-    const originalText = button.innerHTML;
+    const originalHTML = button.innerHTML;
     
-    button.innerHTML = '<span class="loading"></span> Analyzing...';
+    button.innerHTML = '<span class="loading"></span>';
     button.disabled = true;
     
     try {
         // Get component info from table row
         const row = document.querySelector(`tr[data-vuln-id="${vulnId}"]`);
+        if (!row) return;
+        
         const component = row.cells[0].textContent;
         const version = row.cells[1].textContent;
         
@@ -184,10 +188,9 @@ async function analyzeReachability(vulnId) {
         const result = await response.json();
         
         if (result.is_reachable !== null) {
-            Metro.notify.create(
+            showNotification(
                 `Reachable: ${result.is_reachable ? 'YES' : 'NO'} (${Math.round(result.confidence * 100)}% confidence)`,
-                'Analysis Complete',
-                { cls: result.is_reachable ? 'alert' : 'success' }
+                result.is_reachable ? 'warning' : 'success'
             );
             
             // Reload table
@@ -196,9 +199,9 @@ async function analyzeReachability(vulnId) {
         
     } catch (error) {
         console.error('Error analyzing:', error);
-        Metro.notify.create('Analysis failed', 'Error', { cls: 'alert' });
+        showNotification('Analysis failed: ' + error.message, 'error');
     } finally {
-        button.innerHTML = originalText;
+        button.innerHTML = originalHTML;
         button.disabled = false;
     }
 }
@@ -215,16 +218,15 @@ async function checkUpgrade(vulnId) {
             // Show upgrade modal
             showUpgradeModal(vulnId, result);
         } else {
-            Metro.notify.create(
+            showNotification(
                 `Cannot auto-upgrade: ${result.reason}`,
-                'Upgrade Check',
-                { cls: 'warning' }
+                'warning'
             );
         }
         
     } catch (error) {
         console.error('Error checking upgrade:', error);
-        Metro.notify.create('Upgrade check failed', 'Error', { cls: 'alert' });
+        showNotification('Upgrade check failed: ' + error.message, 'error');
     }
 }
 
@@ -232,70 +234,122 @@ function showUpgradeModal(vulnId, upgradeInfo) {
     const modal = document.getElementById('upgrade-modal');
     const details = document.getElementById('upgrade-details');
     
+    if (!modal || !details) return;
+    
     details.innerHTML = `
         <div class="info-panel">
             <p><strong>Component:</strong> ${upgradeInfo.component}</p>
             <p><strong>Current Version:</strong> ${upgradeInfo.from_version}</p>
             <p><strong>Target Version:</strong> ${upgradeInfo.to_version}</p>
             <p><strong>Confidence:</strong> ${Math.round(upgradeInfo.confidence * 100)}%</p>
-            <p class="text-small text-muted mt-2">
-                This will create a pull request with the upgraded dependency and run tests.
+            <p class="text-small mt-2" style="color: #666;">
+                This will create a pull request with the upgraded dependency.
             </p>
         </div>
     `;
     
     // Store vuln ID for the execute button
-    document.getElementById('execute-upgrade').dataset.vulnId = vulnId;
-    document.getElementById('execute-upgrade').dataset.upgradeInfo = JSON.stringify(upgradeInfo);
+    const executeBtn = document.getElementById('execute-upgrade');
+    if (executeBtn) {
+        executeBtn.dataset.vulnId = vulnId;
+        executeBtn.dataset.upgradeInfo = JSON.stringify(upgradeInfo);
+    }
     
-    Metro.getPlugin(modal, 'modal').open();
+    // Open modal
+    modal.style.display = 'flex';
 }
 
 // Execute upgrade
-document.getElementById('execute-upgrade')?.addEventListener('click', async function() {
-    const vulnId = this.dataset.vulnId;
-    const upgradeInfo = JSON.parse(this.dataset.upgradeInfo);
-    
-    this.innerHTML = '<span class="loading"></span> Creating PR...';
-    this.disabled = true;
-    
-    try {
-        const response = await fetch(`${API_BASE}/upgrade/execute`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                vuln_id: vulnId,
-                component: upgradeInfo.component,
-                from_version: upgradeInfo.from_version,
-                to_version: upgradeInfo.to_version
-            })
-        });
+const executeUpgradeBtn = document.getElementById('execute-upgrade');
+if (executeUpgradeBtn) {
+    executeUpgradeBtn.addEventListener('click', async function() {
+        const vulnId = this.dataset.vulnId;
+        const upgradeInfo = JSON.parse(this.dataset.upgradeInfo);
         
-        const result = await response.json();
+        this.innerHTML = '<span class="loading"></span>';
+        this.disabled = true;
         
-        if (result.success) {
-            Metro.notify.create(
-                `PR created: <a href="${result.pr_url}" target="_blank">#${result.pr_number}</a>`,
-                'Upgrade Initiated',
-                { cls: 'success', timeout: 10000 }
-            );
+        try {
+            const response = await fetch(`${API_BASE}/upgrade/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    vuln_id: vulnId,
+                    component: upgradeInfo.component,
+                    from_version: upgradeInfo.from_version,
+                    to_version: upgradeInfo.to_version
+                })
+            });
             
-            // Close modal
-            Metro.getPlugin(document.getElementById('upgrade-modal'), 'modal').close();
-        } else {
-            Metro.notify.create(`Failed: ${result.error}`, 'Error', { cls: 'alert' });
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification(
+                    `PR created successfully! PR #${result.pr_number}`,
+                    'success'
+                );
+                
+                // Close modal
+                const modal = document.getElementById('upgrade-modal');
+                if (modal) modal.style.display = 'none';
+            } else {
+                showNotification(`Failed: ${result.error}`, 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error executing upgrade:', error);
+            showNotification('Upgrade failed: ' + error.message, 'error');
+        } finally {
+            this.innerHTML = '<i class="fas fa-rocket"></i> Create Upgrade PR';
+            this.disabled = false;
         }
-        
-    } catch (error) {
-        console.error('Error executing upgrade:', error);
-        Metro.notify.create('Upgrade failed', 'Error', { cls: 'alert' });
-    } finally {
-        this.innerHTML = '<i class="fas fa-rocket"></i> Create Upgrade PR';
-        this.disabled = false;
+    });
+}
+
+// Simple notification function
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 4px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        background: ${type === 'success' ? '#4caf50' : type === 'warning' ? '#ff9800' : '#f44336'};
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
-});
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
 
 // Real-time updates - poll every 30 seconds
 setInterval(() => {
