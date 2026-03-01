@@ -15,7 +15,7 @@ if current_dir not in sys.path:
 base_dir = os.path.dirname(os.path.abspath(__file__))
 frontend_dir = os.path.join(base_dir, 'frontend')
 
-app = Flask(__name__, static_folder=frontend_dir, static_url_path='/')
+app = Flask(__name__)
 CORS(app)
 
 # Initialize components
@@ -71,10 +71,20 @@ def init_db():
 
 init_db()
 
-# Serve frontend - catch all routes and serve index.html for SPA
+# Serve static files (CSS, JS, images) from frontend/assets
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory(os.path.join(frontend_dir, 'assets'), filename)
+
+# Serve index.html for all other frontend routes (SPA support)
 @app.route('/')
-def serve_index():
-    return app.send_static_file('index.html')
+@app.route('/<path:path>')
+def serve_frontend(path=None):
+    # Check if it's a static file request
+    if path and path.startswith('assets/'):
+        return send_from_directory(frontend_dir, path)
+    # Serve index.html for all other routes (SPA)
+    return send_from_directory(frontend_dir, 'index.html')
 
 # API Endpoints
 @app.route('/api/projects', methods=['GET', 'POST'])
