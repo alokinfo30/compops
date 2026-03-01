@@ -11,16 +11,19 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-# Import our custom modules
+# Get the absolute path to the project root
+base_dir = os.path.dirname(os.path.abspath(__file__))
+frontend_dir = os.path.join(base_dir, 'frontend')
+
+app = Flask(__name__, static_folder=frontend_dir, static_url_path='/')
+CORS(app)
+
+# Initialize components
 from universal_upgrade import UniversalUpgradeEngine
 from smart_sbom_graph import SmartSBOMGraph
 from reachability_ai import ReachabilityAnalyzer
 from github_integration import GitHubAutomation
 
-app = Flask(__name__, static_folder='../frontend', static_url_path='')
-CORS(app)
-
-# Initialize components
 upgrade_engine = UniversalUpgradeEngine()
 sbom_graph = SmartSBOMGraph()
 reachability_ai = ReachabilityAnalyzer()
@@ -68,14 +71,10 @@ def init_db():
 
 init_db()
 
-# Serve frontend
+# Serve frontend - catch all routes and serve index.html for SPA
 @app.route('/')
 def serve_index():
-    return send_from_directory('../frontend', 'index.html')
-
-@app.route('/<path:path>')
-def serve_frontend(path):
-    return send_from_directory('../frontend', path)
+    return app.send_static_file('index.html')
 
 # API Endpoints
 @app.route('/api/projects', methods=['GET', 'POST'])
