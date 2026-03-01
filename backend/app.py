@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_file, abort
 from flask_cors import CORS
 import sqlite3
 import json
@@ -11,9 +11,32 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-# Get the absolute path to the project root
+# Determine the base directory - works both locally and on Render
+# On Render, the repo is cloned to /opt/render/project/src
 base_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_dir = os.path.join(base_dir, 'frontend')
+frontend_dir = os.path.join(base_dir, '..', 'frontend')
+frontend_dir = os.path.normpath(frontend_dir)
+
+# Check multiple possible locations for frontend
+possible_paths = [
+    os.path.join(base_dir, 'frontend'),
+    os.path.join(base_dir, '..', 'frontend'),
+    os.path.join(os.path.dirname(base_dir), 'frontend'),
+    '/opt/render/project/src/frontend',
+]
+
+frontend_path = None
+for path in possible_paths:
+    if os.path.exists(os.path.join(path, 'index.html')):
+        frontend_path = path
+        break
+
+if frontend_path is None:
+    # Fallback - use base_dir/frontend
+    frontend_path = os.path.join(base_dir, 'frontend')
+
+print(f"Frontend path: {frontend_path}", file=sys.stderr)
+print(f"Base dir: {base_dir}", file=sys.stderr)
 
 app = Flask(__name__)
 CORS(app)
@@ -71,20 +94,39 @@ def init_db():
 
 init_db()
 
-# Serve static files (CSS, JS, images) from frontend/assets
+# Serve static assets
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
-    return send_from_directory(os.path.join(frontend_dir, 'assets'), filename)
+    asset_path = os.path.join(frontend_path, 'assets', filename)
+    if os.path.exists(asset_path):
+        return send_file(asset_path)
+    # Try without assets prefix
+    asset_path = os.path.join(frontend_path, filename)
+    if os.path.exists(asset_path):
+        return send_file(asset_path)
+    return abort(404)
 
-# Serve index.html for all other frontend routes (SPA support)
+# Serve index.html for root and all frontend routes
 @app.route('/')
+def serve_index():
+    index_path = os.path.join(frontend_path, 'index.html')
+    if os.path.exists(index_path):
+        return send_file(index_path)
+    return abort(404)
+
 @app.route('/<path:path>')
-def serve_frontend(path=None):
-    # Check if it's a static file request
-    if path and path.startswith('assets/'):
-        return send_from_directory(frontend_dir, path)
-    # Serve index.html for all other routes (SPA)
-    return send_from_directory(frontend_dir, 'index.html')
+def serve_frontend(path):
+    # Try as a file first
+    file_path = os.path.join(frontend_path, path)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return send_file(file_path)
+    
+    # Fallback to index.html for SPA routing
+    index_path = os.path.join(frontend_path, 'index.html')
+    if os.path.exists(index_path):
+        return send_file(index_path)
+    
+    return abort(404)
 
 # API Endpoints
 @app.route('/api/projects', methods=['GET', 'POST'])
