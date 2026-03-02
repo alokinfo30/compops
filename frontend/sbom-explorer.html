@@ -339,12 +339,12 @@
             container.innerHTML = 
                 '<div class="row">' +
                 '<div class="col-md-6">' +
-                '<p><strong>Name:</strong> ' + (details.name || details.id) + '</p>' +
-                '<p><strong>Type:</strong> ' + (details.type || 'unknown') + '</p>' +
+                '<p class="text-white" ><strong>Name:</strong> ' + (details.name || details.id) + '</p>' +
+                '<p class="text-white"><strong>Type:</strong> ' + (details.type || 'unknown') + '</p>' +
                 '</div>' +
                 '<div class="col-md-6">' +
-                '<p><strong>Vulnerabilities:</strong> ' + vulns.length + '</p>' +
-                (vulns.length > 0 ? '<p><strong>CVE IDs:</strong> ' + vulns.join(', ') + '</p>' : '') +
+                '<p class="text-white"><strong>Vulnerabilities:</strong> ' + vulns.length + '</p>' +
+                (vulns.length > 0 ? '<p class="text-white"><strong>CVE IDs:</strong> ' + vulns.join(', ') + '</p>' : '') +
                 '</div>' +
                 '</div>';
             container.classList.remove('text-center', 'text-muted', 'p-4');
