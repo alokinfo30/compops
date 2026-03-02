@@ -86,15 +86,15 @@
                         <div class="d-flex flex-wrap gap-3">
                             <div class="d-flex align-items-center">
                                 <span class="legend-color me-2" style="background: #9c27b0;"></span>
-                                <span>Project</span>
+                                <span class="text-white">Project</span>
                             </div>
                             <div class="d-flex align-items-center">
                                 <span class="legend-color me-2" style="background: #4caf50;"></span>
-                                <span>Component</span>
+                                <span class="text-white">Component</span>
                             </div>
                             <div class="d-flex align-items-center">
                                 <span class="legend-color me-2" style="background: #f44336;"></span>
-                                <span>Vulnerability</span>
+                                <span class="text-white">Vulnerability</span>
                             </div>
                         </div>
                     </div>
@@ -295,7 +295,9 @@
                 .attr('dx', 20)
                 .attr('dy', 5)
                 .text(function(d) { return d.name || d.id; })
-                .style('font-size', '12px');
+                .style('font-size', '12px')
+                .style('fill', 'white');
+
             
             node.on('click', function(event, d) {
                 showComponentDetails(d);
