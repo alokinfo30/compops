@@ -381,3 +381,80 @@ setInterval(function() {
         loadVulnerabilities(toggle ? toggle.checked : false);
     }
 }, 30000);
+
+// Vulnerability Scanning
+function scanProject(projectId) {
+    fetch(API_BASE + '/scan/vulnerabilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
+        if (result.success) {
+            showNotification('Scanned ' + result.dependencies_scanned + ' dependencies, found ' + result.vulnerabilities_found + ' vulnerabilities', 'success');
+            loadDashboardStats();
+            loadVulnerabilities();
+        } else {
+            showNotification('Scan failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error scanning:', error);
+        showNotification('Scan failed: ' + error.message, 'error');
+    });
+}
+
+// SBOM Generation
+function generateSBOM(projectId, format) {
+    format = format || 'cyclonedx';
+    
+    fetch(API_BASE + '/sbom/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId, format: format })
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(result) {
+        if (result.status === 'success') {
+            showNotification('SBOM generated with ' + result.components + ' components', 'success');
+            if (typeof loadSBOMGraph === 'function') {
+                loadSBOMGraph(projectId);
+            }
+        } else {
+            showNotification('SBOM generation failed: ' + (result.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error generating SBOM:', error);
+        showNotification('SBOM generation failed: ' + error.message, 'error');
+    });
+}
+
+// SBOM Export
+function exportSBOM(projectId, format) {
+    format = format || 'cyclonedx';
+    
+    fetch(API_BASE + '/sbom/export/' + projectId + '?format=' + format)
+    .then(function(response) { return response.json(); })
+    .then(function(sbom) {
+        if (sbom && !sbom.success) {
+            var blob = new Blob([JSON.stringify(sbom, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'sbom-' + projectId + '.' + (format === 'cyclonedx' ? 'json' : format);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showNotification('SBOM exported successfully', 'success');
+        } else {
+            showNotification('No SBOM found. Generate one first.', 'warning');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error exporting SBOM:', error);
+        showNotification('Export failed: ' + error.message, 'error');
+    });
+}

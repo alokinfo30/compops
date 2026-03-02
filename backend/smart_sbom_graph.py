@@ -4,6 +4,7 @@ import sqlite3
 from typing import Dict, List, Any
 import pickle
 import os
+from datetime import datetime
 
 class SmartSBOMGraph:
     """Graph-based SBOM database for complex queries"""

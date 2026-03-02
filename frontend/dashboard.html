@@ -60,7 +60,7 @@
             <div class="col-md-6 col-sm-12">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h4 class="mb-0">Vulnerability Severity Distribution</h4>
+                        <h4 class="mb-0 text-white">Vulnerability Severity Distribution</h4>
                     </div>
                     <div class="card-body">
                         <div style="height: 250px;">
@@ -74,7 +74,7 @@
             <div class="col-md-6 col-sm-12">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h4 class="mb-0">Reachability Analysis</h4>
+                        <h4 class="mb-0 text-white">Reachability Analysis</h4>
                     </div>
                     <div class="card-body">
                         <div style="height: 250px;">
@@ -91,7 +91,7 @@
             <div class="col-md-6 col-sm-12">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h4 class="mb-0">Top Vulnerable Components</h4>
+                        <h4 class="mb-0 text-white">Top Vulnerable Components</h4>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -117,7 +117,7 @@
             <div class="col-md-6 col-sm-12">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h4 class="mb-0">CVSS Score Distribution</h4>
+                        <h4 class="mb-0 text-white" >CVSS Score Distribution</h4>
                     </div>
                     <div class="card-body">
                         <div style="height: 250px;">
@@ -133,7 +133,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0">Security Summary</h4>
+                        <h4 class="mb-0 text-white">Security Summary</h4>
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
@@ -172,8 +172,9 @@
         </div>
 
         <!-- Footer -->
-        <footer class="mt-4 text-center text-muted">
-            <p>&copy; 2024 CompOps Platform - Software Supply Chain Security</p>
+<footer class="mt-4 text-center text-muted">
+            <p>&copy; <span id="year"></span> CompOps Platform - Software Supply Chain Security</p>
+            <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
         </footer>
     </div>
 

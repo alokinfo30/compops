@@ -46,11 +46,15 @@ from universal_upgrade import UniversalUpgradeEngine
 from smart_sbom_graph import SmartSBOMGraph
 from reachability_ai import ReachabilityAnalyzer
 from github_integration import GitHubAutomation
+from sbom_generator import SBOMGenerator
+from vulnerability_scanner import VulnerabilityScanner
 
 upgrade_engine = UniversalUpgradeEngine()
 sbom_graph = SmartSBOMGraph()
 reachability_ai = ReachabilityAnalyzer()
 github_auto = GitHubAutomation()
+sbom_generator = SBOMGenerator()
+vuln_scanner = VulnerabilityScanner()
 
 # Database initialization
 def init_db():
@@ -232,6 +236,68 @@ def analyze_reachability():
         conn.close()
     
     return jsonify(result)
+
+@app.route('/api/scan/vulnerabilities', methods=['POST'])
+def scan_vulnerabilities():
+    """Scan a project for vulnerabilities using OSV API"""
+    data = request.json
+    project_id = data.get('project_id')
+    
+    conn = sqlite3.connect('database/sbom.db')
+    c = conn.cursor()
+    c.execute('SELECT repo_url FROM projects WHERE id = ?', (project_id,))
+    row = c.fetchone()
+    conn.close()
+    
+    if not row:
+        return jsonify({'success': False, 'error': 'Project not found'})
+    
+    repo_url = row[0]
+    result = vuln_scanner.scan_project(project_id, repo_url)
+    sbom_graph.generate_sbom(project_id, repo_url)
+    
+    return jsonify(result)
+
+@app.route('/api/sbom/generate', methods=['POST'])
+def generate_sbom():
+    """Generate SBOM for a project"""
+    data = request.json
+    project_id = data.get('project_id')
+    format = data.get('format', 'cyclonedx')
+    
+    conn = sqlite3.connect('database/sbom.db')
+    c = conn.cursor()
+    c.execute('SELECT repo_url FROM projects WHERE id = ?', (project_id,))
+    row = c.fetchone()
+    conn.close()
+    
+    if not row:
+        return jsonify({'success': False, 'error': 'Project not found'})
+    
+    repo_url = row[0]
+    result = sbom_generator.generate_sbom(project_id, repo_url, format)
+    sbom_graph.generate_sbom(project_id, repo_url)
+    
+    return jsonify(result)
+
+@app.route('/api/sbom/export/<int:project_id>', methods=['GET'])
+def export_sbom(project_id):
+    """Export SBOM in specified format"""
+    format = request.args.get('format', 'cyclonedx')
+    sbom = sbom_generator.get_sbom_export(project_id, format)
+    
+    if sbom:
+        return jsonify(sbom)
+    return jsonify({'success': False, 'error': 'SBOM not found'})
+
+@app.route('/api/vulnerability/<vuln_id>', methods=['GET'])
+def get_vulnerability_details(vuln_id):
+    """Get detailed vulnerability information"""
+    details = vuln_scanner.get_vulnerability_details(vuln_id)
+    
+    if details:
+        return jsonify(details)
+    return jsonify({'success': False, 'error': 'Vulnerability not found'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
