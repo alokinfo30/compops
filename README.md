@@ -90,7 +90,55 @@ Navigate to `http://localhost:5000` in your browser.
 - `POST /api/upgrade/execute` - Execute auto-upgrade
 - `POST /api/reachability/analyze` - Analyze vulnerability reachability
 
+
+🏗️ Complete CompOps Platform Architecture
+
+Tech Stack (100% Free)
+
+· Backend: Python Flask + SQLite (free, no licenses)
+· Frontend: Metro UI CSS  + Vanilla JS (responsive, mobile-first)
+· Database: SQLite + NetworkX for graph operations (in-memory graph DB)
+· AI Integration: Local LLM via Ollama (free, no API costs)
+· CI/CD Integration: GitHub Actions (free for public repos)
+· Hosting: AWS Free Tier (t3.micro, 750 hrs/month free)  + Amplify Hosting 
+· SBOM Processing: CycloneDX + SPDX parsers 
+
+📁 Project Structure
+
+```
+compops-platform/
+├── backend/
+│   ├── app.py                 # Main Flask application
+│   ├── requirements.txt       # Python dependencies
+│   ├── universal_upgrade.py   # Auto-upgrade engine
+│   ├── smart_sbom_graph.py    # Graph-based SBOM database
+│   ├── reachability_ai.py     # AI-powered reachability analysis
+│   ├── github_integration.py  # GitHub PR automation
+│   └── database/
+│       ├── sbom.db            # SQLite database
+│       └── graph_store.pickle  # Serialized graph data
+├── frontend/
+│   ├── index.html             # Main dashboard
+│   ├── dashboard.html          # Analytics view
+│   ├── sbom-explorer.html      # Graph visualization
+│   └── assets/
+│       ├── css/
+│       │   └── custom.css      # Metro UI overrides
+│       └── js/
+│           └── app.js          # Frontend logic
+├── .github/
+│   └── workflows/
+│       └── auto-upgrade.yml    # GitHub Actions workflow
+├── deploy.sh                    # One-click deployment script
+└── README.md                    # Setup instructions
+
+
+
+
+
+
 ## License
 
 MIT
+
 
