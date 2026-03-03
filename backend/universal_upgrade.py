@@ -17,7 +17,7 @@ class UniversalUpgradeEngine:
             'golang': self._upgrade_go
         }
         
-    def check_upgrade_feasibility(self, vuln_id: int) -> Dict:
+    def check_upgrade_feasibility(self, vuln_id: str) -> Dict:
         """Check if a vulnerability can be auto-upgraded"""
         # Get vulnerability details from database
         import sqlite3

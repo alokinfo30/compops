@@ -264,10 +264,20 @@ function analyzeReachability(vulnId) {
 }
 
 function checkUpgrade(vulnId) {
-    fetch(API_BASE + '/upgrade/check/' + encodeURIComponent(vulnId), {
-        method: 'POST'
+    // The vulnId is already URI-encoded from the onclick handler in renderVulnerabilitiesTable
+    fetch(API_BASE + '/upgrade/check/' + vulnId, {
+        method: 'GET'
     })
-    .then(function(response) { return response.json(); })
+    .then(function(response) {
+        if (!response.ok) {
+            // If we get a non-JSON error response (like a 404 HTML page),
+            // this will prevent a JSON parsing error and provide a better error message.
+            return response.text().then(function(text) {
+                throw new Error('Server returned ' + response.status + '. Response: ' + text.substring(0, 100));
+            });
+        }
+        return response.json();
+    })
     .then(function(result) {
         if (result.feasible) {
             showUpgradeModal(decodeURIComponent(vulnId), result);
@@ -458,3 +468,10 @@ function exportSBOM(projectId, format) {
         showNotification('Export failed: ' + error.message, 'error');
     });
 }
+
+// Expose functions to global scope for inline event handlers
+window.generateSBOM = generateSBOM;
+window.exportSBOM = exportSBOM;
+window.scanProject = scanProject;
+window.analyzeReachability = analyzeReachability;
+window.checkUpgrade = checkUpgrade;

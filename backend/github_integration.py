@@ -11,7 +11,7 @@ class GitHubAutomation:
         self.token = token or os.environ.get('GITHUB_TOKEN')
         self.api_base = "https://api.github.com"
         
-    def create_upgrade_pr(self, vuln_id: int, component: str, 
+    def create_upgrade_pr(self, vuln_id: str, component: str, 
                           from_version: str, to_version: str) -> Dict:
         """Create a pull request with the upgraded dependency"""
         

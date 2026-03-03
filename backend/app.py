@@ -197,7 +197,7 @@ def get_sbom_graph(project_id):
     graph_data = sbom_graph.get_graph_data(project_id)
     return jsonify(graph_data)
 
-@app.route('/api/upgrade/check/<int:vuln_id>', methods=['POST'])
+@app.route('/api/upgrade/check/<path:vuln_id>', methods=['GET'])
 def check_upgrade(vuln_id):
     """Check if auto-upgrade is possible"""
     result = upgrade_engine.check_upgrade_feasibility(vuln_id)
