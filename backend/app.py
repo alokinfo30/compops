@@ -71,8 +71,19 @@ def init_db():
                   created_at TIMESTAMP)''')
     
     # Vulnerabilities table
+    # Check for schema migration (if old table exists without vuln_id)
+    try:
+        c.execute('SELECT vuln_id FROM vulnerabilities LIMIT 1')
+    except sqlite3.OperationalError:
+        # Drop table if it exists but has wrong schema (dev environment reset)
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vulnerabilities'")
+        if c.fetchone():
+            print("Dropping old vulnerabilities table to update schema...", file=sys.stderr)
+            c.execute('DROP TABLE vulnerabilities')
+
     c.execute('''CREATE TABLE IF NOT EXISTS vulnerabilities
-                 (id TEXT PRIMARY KEY,
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  vuln_id TEXT,
                   project_id INTEGER,
                   component_name TEXT,
                   version TEXT,
@@ -116,20 +127,6 @@ def serve_index():
     index_path = os.path.join(frontend_path, 'index.html')
     if os.path.exists(index_path):
         return send_file(index_path)
-    return abort(404)
-
-@app.route('/<path:path>')
-def serve_frontend(path):
-    # Try as a file first
-    file_path = os.path.join(frontend_path, path)
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return send_file(file_path)
-    
-    # Fallback to index.html for SPA routing
-    index_path = os.path.join(frontend_path, 'index.html')
-    if os.path.exists(index_path):
-        return send_file(index_path)
-    
     return abort(404)
 
 # API Endpoints
@@ -178,14 +175,15 @@ def get_vulnerabilities():
     c.execute(query, params)
     vulns = [{
         'id': row[0],
-        'project_id': row[1],
-        'component': row[2],
-        'version': row[3],
-        'severity': row[4],
-        'cvss': row[5],
-        'description': row[6],
-        'fixed_version': row[7],
-        'is_reachable': bool(row[9])
+        'vuln_id': row[1],
+        'project_id': row[2],
+        'component': row[3],
+        'version': row[4],
+        'severity': row[5],
+        'cvss': row[6],
+        'description': row[7],
+        'fixed_version': row[8],
+        'is_reachable': bool(row[10])
     } for row in c.fetchall()]
     
     conn.close()
@@ -219,10 +217,18 @@ def execute_upgrade():
 def analyze_reachability():
     """AI-powered reachability analysis"""
     data = request.json
+    
+    # Get CVE ID for AI analysis (data['vuln_id'] is the Row ID)
+    conn = sqlite3.connect('database/sbom.db')
+    c = conn.cursor()
+    c.execute('SELECT vuln_id FROM vulnerabilities WHERE id = ?', (data['vuln_id'],))
+    row = c.fetchone()
+    conn.close()
+    
     result = reachability_ai.analyze(
         component=data['component'],
         version=data['version'],
-        vuln_id=data['vuln_id'],
+        vuln_id=row[0] if row else 'UNKNOWN',
         code_context=data.get('code_context')
     )
     
@@ -298,6 +304,21 @@ def get_vulnerability_details(vuln_id):
     if details:
         return jsonify(details)
     return jsonify({'success': False, 'error': 'Vulnerability not found'})
+
+# Catch-all route must be last to avoid shadowing API routes
+@app.route('/<path:path>')
+def serve_frontend(path):
+    # Try as a file first
+    file_path = os.path.join(frontend_path, path)
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return send_file(file_path)
+    
+    # Fallback to index.html for SPA routing
+    index_path = os.path.join(frontend_path, 'index.html')
+    if os.path.exists(index_path):
+        return send_file(index_path)
+    
+    return abort(404)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -176,6 +176,7 @@ function renderVulnerabilitiesTable(vulns) {
     for (var i = 0; i < vulns.length; i++) {
         var vuln = vulns[i];
         var vulnId = vuln.id ? encodeURIComponent(vuln.id) : '';
+        var displayId = escapeHtml(vuln.vuln_id || vuln.id);
         var component = escapeHtml(vuln.component);
         var version = escapeHtml(vuln.version);
         var severity = vuln.severity || 'UNKNOWN';
@@ -187,7 +188,7 @@ function renderVulnerabilitiesTable(vulns) {
         html += '<tr data-vuln-id="' + vulnId + '" data-component="' + component + '" data-version="' + version + '">';
         html += '<td>' + component + '</td>';
         html += '<td>' + version + '</td>';
-        html += '<td>' + escapeHtml(vuln.id) + '</td>';
+        html += '<td>' + displayId + '</td>';
         html += '<td><span class="badge ' + severityClass + '">' + severity + '</span></td>';
         html += '<td>' + cvss + '</td>';
         html += '<td><span class="badge ' + reachableClass + '">' + isReachable + '</span></td>';
@@ -292,10 +293,10 @@ function checkUpgrade(vulnId) {
 }
 
 function showUpgradeModal(vulnId, upgradeInfo) {
-    var modal = document.getElementById('upgrade-modal');
+    var modalEl = document.getElementById('upgrade-modal');
     var details = document.getElementById('upgrade-details');
     
-    if (!modal || !details) return;
+    if (!modalEl || !details) return;
     
     currentVulnId = vulnId;
     currentUpgradeInfo = upgradeInfo;
@@ -308,7 +309,8 @@ function showUpgradeModal(vulnId, upgradeInfo) {
         '<p class="text-small mt-2" style="color: #666;">This will create a pull request with the upgraded dependency.</p>' +
         '</div>';
     
-    modal.style.display = 'flex';
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
 }
 
 function executeUpgrade() {
@@ -336,8 +338,9 @@ function executeUpgrade() {
     .then(function(result) {
         if (result.success) {
             showNotification('PR created successfully! PR #' + result.pr_number, 'success');
-            var modal = document.getElementById('upgrade-modal');
-            if (modal) modal.style.display = 'none';
+            var modalEl = document.getElementById('upgrade-modal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
             currentVulnId = null;
             currentUpgradeInfo = null;
         } else {

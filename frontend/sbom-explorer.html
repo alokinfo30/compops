@@ -364,6 +364,11 @@
         function resetZoom() {
             svg.transition().call(zoom.transform, d3.zoomIdentity);
         }
+
+        // Alias for app.js compatibility
+        function loadSBOMGraph(projectId) {
+            loadGraphData(projectId);
+        }
     </script>
     
     <style>
